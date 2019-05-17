@@ -17,7 +17,7 @@ struct ProvisioningProfile {
         teamID: String,
         rawXML: String,
         entitlements: AnyObject?
-    fileprivate let delegate = NSApplication.shared().delegate as! AppDelegate
+    fileprivate let delegate = NSApplication.shared.delegate as! AppDelegate
     
     static func getProfiles() -> [ProvisioningProfile] {
         var output: [ProvisioningProfile] = []
@@ -38,8 +38,21 @@ struct ProvisioningProfile {
                 }
         }
 
-        
-        return output;
+        // distinct
+        output = output.sorted(by: {
+            $0.created.timeIntervalSince1970 > $1.created.timeIntervalSince1970
+        })
+
+        var newProfiles = [ProvisioningProfile]()
+        var names = [String]()
+        for profile in output {
+            if !names.contains("\(profile.name)\(profile.appID)") {
+                newProfiles.append(profile)
+                names.append("\(profile.name)\(profile.appID)")
+                NSLog("\(profile.name), \(profile.created)")
+            }
+        }
+        return newProfiles;
     }
     
     init?(filename: String){
@@ -60,7 +73,7 @@ struct ProvisioningProfile {
                     let name = (results as AnyObject).value(forKey: "Name") as? String,
                     let entitlements = (results as AnyObject).value(forKey: "Entitlements"),
                     let applicationIdentifier = (entitlements as AnyObject).value(forKey: "application-identifier") as? String,
-                    let periodIndex = applicationIdentifier.characters.index(of: ".") {
+                    let periodIndex = applicationIdentifier.firstIndex(of: ".") {
                         self.filename = filename
                         self.expires = expirationDate
                         self.created = creationDate
